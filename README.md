@@ -54,8 +54,7 @@
 ```bash
 git clone https://github.com/Joyyi-11/zhixin-wiki.git my-kb
 cd my-kb
-pip install python-frontmatter
-cp templates/inbox.md thoughts/inbox.md
+pip install -r requirements.txt
 python scripts/build_index.py
 python scripts/validate.py
 ```
@@ -72,30 +71,79 @@ wiki/topics/ai-collaboration.md      综合两篇笔记，写出当前结论、�
 
 问答时先读 `INDEX.md` 和主题页；只有需要核对具体事实时才回到单源笔记和原料。
 
+## 架构总览
+
+> 一页纸数据流：进 -> 存 -> 取。先看「取」倒推，再回到「进」和「存」。
+
+```text
+┌──────────────────────────── 进（输入）────────────────────────────┐
+│                                                                    │
+│  外部发现（可选）  链接（公众号/GitHub/X）  想法（共享捕获层）  个人文章（articles）
+│       │                   │                       │                     │
+│   评分/筛选/确认        读全文                   整理/晋升             已发表
+│       └───────────────────┴───────────────────────┘                     │
+│                           ▼                                           │
+│             raw/（外部原文，只读，事实依据） ◀──────────────────────────┘
+│                           │
+│                           │ 写单源笔记（摘要/要点/标签/判断/知识角色）
+│                           ▼
+│             notes/（单源笔记）
+│               knowledge_role：personal_basis / curated_influence / external_input
+│               source_type：web / own_article / own_thought
+│                           │
+│                           │ 往回织（多笔记 -> 主题判断，标矛盾）
+│                           ▼
+│             wiki/topics/（主题页）   wiki/entities/（实体页）
+│               主题页必含：当前结论 / 边界与矛盾 / 挑战视角 / 待验证问题 / 来源
+│                           │
+│       ┌───────────────────┼───────────────────┐
+│       ▼                   ▼                   ▼
+│   ┌──── 取 ────┐     ┌──── 取 ────┐     ┌──── 取 ────┐
+│   │ 问答流      │     │ 选题流      │     │ 回顾流      │
+│   │ INDEX->主题 │     │ 主题页矛盾  │     │ review.py   │
+│   │ ->笔记->原料│     │ ->briefs    │     │ 全库快照/   │
+│   │ 编译层优先  │     │ HKR/确认才写│     │ 该推进/     │
+│   │ 不重扫      │     │             │     │ 可选切片    │
+│   └────────────┘     └────────────┘     └────────────┘
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**贯穿全流的机制**：
+
+- **knowledge_role 三分 + 编译顺序**：`personal_basis` 定基准 -> `curated_influence` 解释来源 -> `external_input` 补强/修正/反驳。外部证据不能冒充个人实践。
+- **想法流**：想法先落共享捕获层，晋升为 `own_thought` 笔记（`disposition` 默认待定），处置判断在共振触发或 `review_attention.py` 注意力快照时再做，不在捕获时决策。
+- **反确认偏误**：材料标注性质（支持/补充/修正/反驳/无关），主题页强制「挑战视角」，问答显性呈现矛盾。以个人为锚，又主动逆锚找反例。
+- **往回织不往后堆**：每条新材料都织进主题页、标矛盾，不是新增孤岛。
+- **原料只读 = 保险**：`raw/`、`articles/` 永不改写，错了能回退。
+
+**技术选型**：纯文件 + Markdown + frontmatter，零数据库 / 零向量库 / 零 RAG。机械归脚本，语义归 AI。
+
 ## 脚本约束
 
 - `scripts/build_index.py`：生成 `INDEX.md`，按知识角色组织目录。
 - `scripts/validate.py`：校验 frontmatter、来源路径、主题页必选章节和索引一致性。
 - `scripts/review.py`：输出全库状态和可推进主题，不自动改写内容。
+- `scripts/review_attention.py`：想法流注意力快照（共鸣簇 / 未决张力 / 处置建议），不自动改写 `disposition`。
+- `scripts/lint.py`：语义健康检查（孤儿笔记、缺页实体、标签漂移、过期主题页、主题间潜在矛盾）。
 
 ## 目录结构
 
 ```
 raw/           完整原文（只读事实依据）
 articles/      你已发表的个人文章原文（只读）
-notes/         单源笔记（摘要/要点/标签/判断 + knowledge_role）
-thoughts/      想法暂存 inbox.md（gitignore，不公开）
+notes/         单源笔记（摘要/要点/标签/判断 + knowledge_role；own_thought 也在此）
+thoughts/      旧版想法暂存（兼容保留；新想法走共享捕获层）
+inbox.md       共享捕获层（可选，跨项目单文件想法捕获；路径可配置）
 wiki/topics/   主题页（跨笔记的当前综合判断）
 wiki/entities/ 实体页
 briefs/        候选选题
-scripts/       build_index.py / validate.py / review.py
+scripts/       build_index.py / validate.py / review.py / review_attention.py / lint.py
 templates/     笔记/主题/实体/选题/inbox 模板
 docs/          快速上手 / 方法论 / 自定义
 ```
 
 ## 了解更多
 
-- [架构总览](ARCHITECTURE.md)——进->存->取 数据流图
 - [方法论](docs/methodology.md)——核心理念与 knowledge_role 三分
 - [Skill 入口](SKILL.md)——可复用方法论与 agent 工作流
 - [运行规则](AGENTS.md)——本仓库内的 agent 指令（语义层）

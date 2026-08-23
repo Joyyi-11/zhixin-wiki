@@ -30,8 +30,7 @@ python scripts/validate.py
 ## 文件职责
 
 - `SKILL.md`：通用方法论和 agent 工作流。
-- `README.md`：公开说明、快速上手和仓库地图。
-- `ARCHITECTURE.md`：一页纸数据流和技术选型。
+- `README.md`：公开说明、快速上手、仓库地图和架构总览。
 - `docs/`：方法论、入门和自定义说明。
 - `templates/`：可复制的笔记、主题页、实体页和选题模板。
 - `scripts/`：索引、校验和回顾等机械任务。

@@ -3,9 +3,11 @@ title: "{{一句话概括这个想法}}"
 date: YYYY-MM-DD
 source_type: own_thought
 knowledge_role: personal_basis
-# source_path 可空：想法没有外部原料，写下来的文字本身就是知识
+source_project: {{来源项目}}  # 想法来源项目，用你自己的固定白名单
+source_path:                 # 可空：想法没有外部原料，写下来的文字本身就是知识
 tags: []
 entities: []
+disposition: 待定            # 处置状态：待定（默认）/ 执行 / 沉淀 / 放弃 / 讨论；捕获时不决策
 ---
 
 # {{标题}}
